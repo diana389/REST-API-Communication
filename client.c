@@ -15,8 +15,10 @@
 #define PORT_SERVER 8080
 
 char *message, *response;
-char *cookie = NULL, *token = NULL, *url;
+char **data_buffer;
+char *cookie = NULL, *token = NULL, url[200];
 int sockfd;
+int data_buffer_size;
 
 char buffer[100];
 
@@ -25,29 +27,48 @@ char password[100];
 int id;
 
 char title[100], author[100], genre[100], publisher[100];
+char page_count_string[100];
 int page_count;
 
 /* extract cookie */
 char *extract_cookie(char *response, char *cookie)
 {
-    cookie = strstr(response, "Set-Cookie:");
-    cookie += 12;
+    cookie = calloc(100, sizeof(char));
 
-    cookie = strtok(cookie, ";");
+    char *p = strstr(response, "Set-Cookie:");
+    p += 12;
+    p = strtok(p, ";");
 
-    // printf("\nCOOKIE: %s\n", cookie);
+    strcpy(cookie, p);
     return cookie;
 }
 
 /* extract token */
 char *extract_token(char *response, char *token)
 {
-    token = strstr(response, "\"token\":");
-    token += 9;
-    token[strlen(token) - 2] = '\0';
+    token = calloc(1000, sizeof(char));
 
-    // printf("\nTOKEN : %s\n", token);
+    char *p = strstr(response, "\"token\":");
+    p += 9;
+    p[strlen(p) - 2] = '\0';
+
+    strcpy(token, p);
     return token;
+}
+
+void free_memory()
+{
+    free(message);
+    free(response);
+
+    if (data_buffer != NULL)
+    {
+        for (int i = 0; i < data_buffer_size; i++)
+            free(data_buffer[i]);
+        free(data_buffer);
+
+        data_buffer = NULL;
+    }
 }
 
 void reg()
@@ -55,43 +76,24 @@ void reg()
     /* set data type */
     char *form_data = "application/json";
     /* set username & password */
-    char **data_buffer = malloc(10 * sizeof(char *));
-    for (int i = 0; i < 10; i++)
+
+    data_buffer_size = 4;
+
+    data_buffer = malloc(data_buffer_size * sizeof(char *));
+    for (int i = 0; i < data_buffer_size; i++)
         data_buffer[i] = malloc(200 * sizeof(char));
 
-    strcpy(data_buffer[0], "{\"username\": \"dianaaaa\", \"password\": \"pass\"}");
+    strcpy(data_buffer[0], "username");
+    strcpy(data_buffer[1], username);
+    strcpy(data_buffer[2], "password");
+    strcpy(data_buffer[3], password);
 
-    url = "/api/v1/tema/auth/register";
+    // strcpy(data_buffer[0], "{\"username\": \"dianaaaa\", \"password\": \"pass\"}");
 
-    /* compute message */
-    message = compute_post_request(IP_SERVER, url, form_data, data_buffer, 1, NULL, 0, NULL);
-    /* send message */
-    send_to_server(sockfd, message);
-    // printf("Message:\n%s", message);
-    response = receive_from_server(sockfd);
-    // printf("Response:\n%s", response);
-
-    char *line = strtok(response, "\n");
-    if (strcmp(line, "HTTP/1.1 400 Bad Request") == 0)
-        printf("\n!!! The username is taken!\n");
-
-    printf("\n!!! 201 - Created - User registered successfully!\n");
-}
-
-void login()
-{
-    /* set data type */
-    char *form_data = "application/json";
-    /* set username & password */
-    char **data_buffer = malloc(10 * sizeof(char *));
-    for (int i = 0; i < 10; i++)
-        data_buffer[i] = malloc(200 * sizeof(char));
-
-    strcpy(data_buffer[0], "{\"username\": \"dianaa\", \"password\": \"pass\"}");
-    url = "/api/v1/tema/auth/login";
+    strcpy(url, "/api/v1/tema/auth/register");
 
     /* compute message */
-    message = compute_post_request(IP_SERVER, url, form_data, data_buffer, 1, NULL, 0, NULL);
+    message = compute_post_request(IP_SERVER, url, form_data, data_buffer, data_buffer_size, NULL, NULL);
     /* send message */
     send_to_server(sockfd, message);
     // printf("Message:\n%s", message);
@@ -100,21 +102,61 @@ void login()
 
     if (strncmp(response, "HTTP/1.1 400 Bad Request", 24) == 0)
     {
-        printf("\n!!! The credentials do not match!\n");
+        printf("\n!!! The username is taken!\n\n");
+        free_memory();
         return;
     }
 
-    printf("200 - OK - Welcome!");
+    printf("\n201 - Created - User registered successfully!\n\n");
+    free_memory();
+}
+
+void login()
+{
+    /* set data type */
+    char *form_data = "application/json";
+
+    /* set username & password */
+    data_buffer_size = 4;
+
+    data_buffer = malloc(data_buffer_size * sizeof(char *));
+    for (int i = 0; i < data_buffer_size; i++)
+        data_buffer[i] = malloc(200 * sizeof(char));
+
+    strcpy(data_buffer[0], "username");
+    strcpy(data_buffer[1], username);
+    strcpy(data_buffer[2], "password");
+    strcpy(data_buffer[3], password);
+
+    strcpy(url, "/api/v1/tema/auth/login");
+
+    /* compute message */
+    message = compute_post_request(IP_SERVER, url, form_data, data_buffer, 4, NULL, NULL);
+    /* send message */
+    send_to_server(sockfd, message);
+    // printf("Message:\n%s", message);
+    response = receive_from_server(sockfd);
+    // printf("Response:\n%s", response);
+
+    if (strncmp(response, "HTTP/1.1 400 Bad Request", 24) == 0)
+    {
+        printf("\n!!! The credentials do not match!\n\n");
+        free_memory();
+        return;
+    }
 
     /* extract cookie */
-    cookie = malloc(200 * sizeof(char));
-    cookie = extract_cookie(response, cookie);
+    if (cookie == NULL)
+        cookie = extract_cookie(response, cookie);
+
+    printf("\n200 - OK - Welcome!\n\n");
+    free_memory();
 }
 
 void enter_library()
 {
-    url = "/api/v1/tema/library/access";
-    message = compute_get_request(IP_SERVER, url, NULL, &cookie, 1, NULL);
+    strcpy(url, "/api/v1/tema/library/access");
+    message = compute_get_request(IP_SERVER, url, NULL, cookie, NULL);
     send_to_server(sockfd, message);
     // printf("Message:\n%s", message);
     response = receive_from_server(sockfd);
@@ -122,27 +164,22 @@ void enter_library()
 
     if (strncmp(response, "HTTP/1.1 401 Unauthorized", 25) == 0)
     {
-        printf("\n!!! You are not logged in!\n");
+        printf("\n!!! You are not logged in!\n\n");
+        free_memory();
         return;
     }
 
-    printf("200 - OK - User entered library!");
-
     /* extract token */
-    token = malloc(1000 * sizeof(char));
-    memset(token, 0, 1000);
     token = extract_token(response, token);
 
-    // printf("\nTOKEN : %s\n", token);
+    printf("\n200 - OK - User entered library!\n\n");
+    free_memory();
 }
 
 void get_books()
 {
-    // printf("\nTOKEN : %s\n", token);
-
-    url = "/api/v1/tema/library/books";
-
-    message = compute_get_request(IP_SERVER, url, NULL, NULL, 0, token);
+    strcpy(url, "/api/v1/tema/library/books");
+    message = compute_get_request(IP_SERVER, url, NULL, NULL, token);
     send_to_server(sockfd, message);
     // printf("Message:\n%s", message);
     response = receive_from_server(sockfd);
@@ -150,26 +187,29 @@ void get_books()
 
     if (strncmp(response, "HTTP/1.1 403 Forbidden", 22) == 0)
     {
-        printf("\n!!! You do not have access to library!\n");
+        printf("\n!!! You do not have access to library!\n\n");
+        free_memory();
         return;
     }
 
-    printf("\n%s\n", basic_extract_json_response(response));
+    if (basic_extract_json_response(response) != NULL)
+        printf("\nBOOKS: [%s\n\n", basic_extract_json_response(response));
+    else
+        printf("\nBOOKS: -\n\n");
+
+    free_memory();
 }
 
 void get_book()
 {
-    // printf("\nTOKEN : %s\n", token);
-
-    url = malloc(200 * sizeof(char));
     strcpy(url, "/api/v1/tema/library/books/");
 
-    char id[50];
-    sprintf(id, "%d", 9997);
+    char id_string[50];
+    sprintf(id_string, "%d", id);
 
-    strcat(url, id);
+    strcat(url, id_string);
 
-    message = compute_get_request(IP_SERVER, url, NULL, NULL, 0, token);
+    message = compute_get_request(IP_SERVER, url, NULL, NULL, token);
     send_to_server(sockfd, message);
     // printf("Message:\n%s", message);
     response = receive_from_server(sockfd);
@@ -177,40 +217,49 @@ void get_book()
 
     if (strncmp(response, "HTTP/1.1 403 Forbidden", 22) == 0)
     {
-        printf("\n!!! You do not have access to library!\n");
+        printf("\n!!! You do not have access to library!\n\n");
+        free_memory();
         return;
     }
 
     if (strncmp(response, "HTTP/1.1 404 Not Found", 22) == 0)
     {
-        printf("\n!!! Invalid ID!\n");
+        printf("\n!!! Invalid ID!\n\n");
+        free_memory();
         return;
     }
 
     printf("\n%s\n", basic_extract_json_response(response));
+    free_memory();
 }
 
 void add_book()
 {
     /* set data type */
     char *form_data = "application/json";
-    /* set username & password */
-    char **data_buffer = malloc(10 * sizeof(char *));
-    for (int i = 0; i < 10; i++)
-        data_buffer[i] = malloc(500 * sizeof(char));
 
-    JSON_Value *value = json_value_init_object();
-    json_object_set_string(json_object(value), "title", "Ion");
-    json_object_set_string(json_object(value), "author", "Liviu");
-    json_object_set_string(json_object(value), "genre", "Comedie");
-    json_object_set_number(json_object(value), "page_count", 95);
-    json_object_set_string(json_object(value), "publisher", "Humanitas");
-    data_buffer[0] = json_serialize_to_string(value);
+    /* set data */
+    data_buffer_size = 10;
 
-    url = "/api/v1/tema/library/books";
+    data_buffer = malloc(data_buffer_size * sizeof(char *));
+    for (int i = 0; i < data_buffer_size; i++)
+        data_buffer[i] = malloc(200 * sizeof(char));
+
+    strcpy(data_buffer[0], "title");
+    strcpy(data_buffer[1], title);
+    strcpy(data_buffer[2], "author");
+    strcpy(data_buffer[3], author);
+    strcpy(data_buffer[4], "genre");
+    strcpy(data_buffer[5], genre);
+    strcpy(data_buffer[6], "page_count");
+    strcpy(data_buffer[7], page_count_string);
+    strcpy(data_buffer[8], "publisher");
+    strcpy(data_buffer[9], publisher);
+
+    strcpy(url, "/api/v1/tema/library/books");
 
     /* compute message */
-    message = compute_post_request(IP_SERVER, url, form_data, data_buffer, 1, NULL, 0, token);
+    message = compute_post_request(IP_SERVER, url, form_data, data_buffer, 10, NULL, token);
     /* send message */
     send_to_server(sockfd, message);
     // printf("Message:\n%s", message);
@@ -219,38 +268,36 @@ void add_book()
 
     if (strncmp(response, "HTTP/1.1 403 Forbidden", 22) == 0)
     {
-        printf("\n!!! You do not have access to library!\n");
+        printf("\n!!! You do not have access to library!\n\n");
+        free_memory();
         return;
     }
 
     if (strncmp(response, "HTTP/1.1 400 Bad Request", 24) == 0)
     {
-        printf("\n!!! Bad format!\n");
+        printf("\n!!! Bad format!\n\n");
+        free_memory();
         return;
     }
 
-    printf("200 - OK - Book added!");
+    printf("\n200 - OK - Book added!\n\n");
+    free_memory();
 }
 
 void delete_book()
 {
     /* set data type */
     char *form_data = "application/json";
-    /* set username & password */
-    char **data_buffer = malloc(10 * sizeof(char *));
-    for (int i = 0; i < 10; i++)
-        data_buffer[i] = malloc(500 * sizeof(char));
 
-    url = malloc(200 * sizeof(char));
     strcpy(url, "/api/v1/tema/library/books/");
 
-    char id[50];
-    sprintf(id, "%d", 9942);
+    char id_string[50];
+    sprintf(id_string, "%d", id);
 
-    strcat(url, id);
+    strcat(url, id_string);
 
     /* compute message */
-    message = compute_delete_request(IP_SERVER, url, form_data, data_buffer, 1, NULL, 0, token);
+    message = compute_delete_request(IP_SERVER, url, form_data, NULL, token);
     send_to_server(sockfd, message);
     // printf("Message:\n%s", message);
     response = receive_from_server(sockfd);
@@ -258,35 +305,52 @@ void delete_book()
 
     if (strncmp(response, "HTTP/1.1 403 Forbidden", 22) == 0)
     {
-        printf("\n!!! You do not have access to library!\n");
+        printf("\n!!! You do not have access to library!\n\n");
+        free_memory();
         return;
     }
 
     if (strncmp(response, "HTTP/1.1 404 Not Found", 22) == 0)
     {
-        printf("\n!!! Invalid ID!\n");
+        printf("\n!!! Invalid ID!\n\n");
+        free_memory();
         return;
     }
 
-    printf("200 - OK - Book deleted!");
+    printf("\n200 - OK - Book deleted!\n\n");
+    free_memory();
 }
 
 void logout()
 {
-    url = "/api/v1/tema/auth/logout";
-    message = compute_get_request(IP_SERVER, url, NULL, &cookie, 1, NULL);
+    strcpy(url, "/api/v1/tema/auth/logout");
+    message = compute_get_request(IP_SERVER, url, NULL, cookie, NULL);
     send_to_server(sockfd, message);
     // printf("Message:\n%s", message);
     response = receive_from_server(sockfd);
     // printf("Response:\n%s", response);
 
+    if (cookie != NULL)
+    {
+        free(cookie);
+        cookie = NULL;
+    }
+
+    if (token != NULL)
+    {
+        free(token);
+        token = NULL;
+    }
+
     if (strncmp(response, "HTTP/1.1 400 Bad Request", 24) == 0)
     {
-        printf("\n!!! You are not logged in!\n");
+        printf("\n!!! You are not logged in!\n\n");
+        free_memory();
         return;
     }
 
-    printf("200 - OK - Goodbye!");
+    printf("\n200 - OK - Goodbye!\n\n");
+    free_memory();
 }
 
 int main(int argc, char *argv[])
@@ -302,75 +366,133 @@ int main(int argc, char *argv[])
 
         if (strcmp(buffer, "register\n") == 0)
         {
-            printf("\n-------- START REGISTER --------\n");
+            // printf("\n-------- START REGISTER --------\n");
+
+            printf("username=");
+            scanf("%s", username);
+            printf("password=");
+            scanf("%s", password);
 
             reg();
 
-            printf("\n-------- END REGISTER ----------\n");
+            continue;
+
+            // printf("\n-------- END REGISTER ----------\n");
         }
 
         if (strcmp(buffer, "login\n") == 0)
         {
-            printf("\n-------- START LOGIN --------\n");
+            // printf("\n-------- START LOGIN --------\n");
+
+            printf("username=");
+            scanf("%s", username);
+            printf("password=");
+            scanf("%s", password);
 
             login();
 
-            printf("\n-------- END LOGIN ----------\n");
+            continue;
+
+            // printf("\n-------- END LOGIN ----------\n");
         }
 
         if (strcmp(buffer, "enter_library\n") == 0)
         {
-            printf("\n-------- ENTER_LIBRARY --------\n");
+            // printf("\n-------- ENTER_LIBRARY --------\n");
 
             enter_library();
 
-            printf("\n-------- END ENTER_LIBRARY ----------\n");
+            continue;
+
+            // printf("\n-------- END ENTER_LIBRARY ----------\n");
         }
 
         if (strcmp(buffer, "get_books\n") == 0)
         {
-            printf("\n-------- GET_BOOKS --------\n");
+            // printf("\n-------- GET_BOOKS --------\n");
 
             get_books();
 
-            printf("\n-------- END GET_BOOKS ----------\n");
+            continue;
+
+            // printf("\n-------- END GET_BOOKS ----------\n");
         }
 
         if (strcmp(buffer, "get_book\n") == 0)
         {
-            printf("\n-------- GET_BOOK --------\n");
+            // printf("\n-------- GET_BOOK --------\n");
+
+            printf("id=");
+            scanf("%d", &id);
 
             get_book();
 
-            printf("\n-------- END GET_BOOK ----------\n");
+            continue;
+
+            // printf("\n-------- END GET_BOOK ----------\n");
         }
 
         if (strcmp(buffer, "add_book\n") == 0)
         {
-            printf("\n-------- START ADD_BOOK --------\n");
+            // printf("\n-------- START ADD_BOOK --------\n");
 
-            add_book();
+            printf("title=");
+            fgets(title, 100, stdin);
+            title[strlen(title) - 1] = '\0';
 
-            printf("\n-------- END ADD_BOOK ----------\n");
+            printf("author=");
+            fgets(author, 100, stdin);
+            author[strlen(author) - 1] = '\0';
+
+            printf("genre=");
+            fgets(genre, 100, stdin);
+            genre[strlen(genre) - 1] = '\0';
+
+            printf("publisher=");
+            fgets(publisher, 100, stdin);
+            publisher[strlen(publisher) - 1] = '\0';
+
+            printf("page_count=");
+
+            if (scanf("%d", &page_count) >= 0)
+            {
+                sprintf(page_count_string, "%d", page_count);
+                add_book();
+            }
+            else
+                printf("\n!!! Invalid page count!\n\n");
+
+            continue;
+
+            // printf("\n-------- END ADD_BOOK ----------\n");
         }
 
         if (strcmp(buffer, "delete_book\n") == 0)
         {
-            printf("\n-------- DELETE_BOOK --------\n");
+            // printf("\n-------- DELETE_BOOK --------\n");
+
+            printf("id=");
+            scanf("%d", &id);
 
             delete_book();
 
-            printf("\n-------- END DELETE_BOOK ----------\n");
+            continue;
+
+            // printf("\n-------- END DELETE_BOOK ----------\n");
         }
 
         if (strcmp(buffer, "logout\n") == 0)
         {
-            printf("\n-------- LOGOUT --------\n");
+            // printf("\n-------- LOGOUT --------\n");
 
             logout();
 
-            printf("\n-------- END LOGOUT ----------\n");
+            continue;
+
+            // printf("\n-------- END LOGOUT ----------\n");
         }
+
+        // printf("\n!!! Not a valid command!\n\n");
 
         close_connection(sockfd);
     }

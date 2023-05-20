@@ -1,3 +1,6 @@
 {
-    "cmake.sourceDirectory": "/home/carusel/Desktop/PCOM/tema 4/Tema--4--PCOM/parson"
+    "cmake.sourceDirectory": "/home/carusel/Desktop/PCOM/tema 4/Tema--4--PCOM/parson",
+    "files.associations": {
+        "type_traits": "c"
+    }
 }
