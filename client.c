@@ -298,7 +298,7 @@ void delete_book()
 {
     char *data_type = "application/json";
 
-    /* form url */
+    // form url 
 
     strcpy(url, "/api/v1/tema/library/books/");
     char id_string[50];
@@ -446,39 +446,13 @@ int main(int argc, char *argv[])
             printf("page_count=");
 
             // check page count
-            if (scanf("%d", &page_count) < 0)
+            if (scanf("%d", &page_count) <= 0)
             {
-                printf("\n!!! Invalid page count!\n\n");
+                printf("\n!!! Invalid data!\n\n");
                 continue;
             }
 
             sprintf(page_count_string, "%d", page_count);
-
-            // check data
-
-            // if (strlen(title) == 0)
-            // {
-            //     printf("\n!!! Invalid title!\n\n");
-            //     continue;
-            // }
-
-            // if (strlen(author) == 0)
-            // {
-            //     printf("\n!!! Invalid author!\n\n");
-            //     continue;
-            // }
-
-            // if (strlen(genre) == 0)
-            // {
-            //     printf("\n!!! Invalid genre!\n\n");
-            //     continue;
-            // }
-
-            // if (strlen(publisher) == 0)
-            // {
-            //     printf("\n!!! Invalid publisher!\n\n");
-            //     continue;
-            // }
 
             add_book();
             continue;

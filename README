@@ -36,10 +36,10 @@ cartea ceruta sau raspunsul care anunta utilizatorul fie ca nu are acces,
 fie ca nu a introdus un id valid.
 
 ADD_BOOK: Se citeste titlul, autorul, genul, editorul si numarul de 
-pagini. Se verfica daca numarul de pagini este un numar si daca celelalte
-campuri sunt diferite de un sir gol, caz in care se apeleaza "add_book".
-Se trimite cererea http cu token si se afiseaza un mesaj care anunta daca
-actiunea a avut succes sau nu (acces nepermis / format necorespunzator).
+pagini. Se verfica daca numarul de pagini este un numar, caz in care se 
+apeleaza "add_book". Se trimite cererea http cu token si se afiseaza un 
+mesaj care anunta daca actiunea a avut succes sau nu (acces nepermis / 
+format necorespunzator).
 
 DELETE_BOOK: Se citeste id-ul si se apeleaza "delete_book".
 Se formeaza url-ul si se trimite cererea de delete, dupa care se 
