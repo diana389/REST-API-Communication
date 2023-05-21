@@ -16,7 +16,7 @@ char *compute_get_request(char *host, char *url, char *query_params,
     char *message = calloc(BUFLEN, sizeof(char));
     char *line = calloc(LINELEN, sizeof(char));
 
-    // Step 1: write the method name, URL, request params (if any) and protocol type
+    // write the method name, URL, request params (if any) and protocol type
     if (query_params != NULL)
         sprintf(line, "GET %s?%s HTTP/1.1", url, query_params);
     else
@@ -24,7 +24,7 @@ char *compute_get_request(char *host, char *url, char *query_params,
 
     compute_message(message, line);
 
-    // Step 2: add the host
+    // add the host
     sprintf(line, "Host: %s", host);
     compute_message(message, line);
 

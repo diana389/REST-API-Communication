@@ -31,7 +31,7 @@ char page_count_string[100];
 int page_count;
 
 /* extract cookie */
-char *extract_cookie(char *response, char *cookie)
+char *get_cookie(char *response, char *cookie)
 {
     cookie = calloc(100, sizeof(char));
 
@@ -44,7 +44,7 @@ char *extract_cookie(char *response, char *cookie)
 }
 
 /* extract token */
-char *extract_token(char *response, char *token)
+char *get_token(char *response, char *token)
 {
     token = calloc(1000, sizeof(char));
 
@@ -87,8 +87,6 @@ void reg()
     strcpy(data_buffer[1], username);
     strcpy(data_buffer[2], "password");
     strcpy(data_buffer[3], password);
-
-    // strcpy(data_buffer[0], "{\"username\": \"dianaaaa\", \"password\": \"pass\"}");
 
     strcpy(url, "/api/v1/tema/auth/register");
 
@@ -147,7 +145,7 @@ void login()
 
     /* extract cookie */
     if (cookie == NULL)
-        cookie = extract_cookie(response, cookie);
+        cookie = get_cookie(response, cookie);
 
     printf("\n200 - OK - Welcome!\n\n");
     free_memory();
@@ -170,7 +168,7 @@ void enter_library()
     }
 
     /* extract token */
-    token = extract_token(response, token);
+    token = get_token(response, token);
 
     printf("\n200 - OK - User entered library!\n\n");
     free_memory();
@@ -229,7 +227,7 @@ void get_book()
         return;
     }
 
-    printf("\n%s\n", basic_extract_json_response(response));
+    printf("\n%s\n\n", basic_extract_json_response(response));
     free_memory();
 }
 
@@ -355,7 +353,6 @@ void logout()
 
 int main(int argc, char *argv[])
 {
-
     while (fgets(buffer, 100, stdin))
     {
         if (strcmp(buffer, "exit\n") == 0)
@@ -374,7 +371,6 @@ int main(int argc, char *argv[])
             scanf("%s", password);
 
             reg();
-
             continue;
 
             // printf("\n-------- END REGISTER ----------\n");
@@ -390,7 +386,6 @@ int main(int argc, char *argv[])
             scanf("%s", password);
 
             login();
-
             continue;
 
             // printf("\n-------- END LOGIN ----------\n");
@@ -401,7 +396,6 @@ int main(int argc, char *argv[])
             // printf("\n-------- ENTER_LIBRARY --------\n");
 
             enter_library();
-
             continue;
 
             // printf("\n-------- END ENTER_LIBRARY ----------\n");
@@ -412,7 +406,6 @@ int main(int argc, char *argv[])
             // printf("\n-------- GET_BOOKS --------\n");
 
             get_books();
-
             continue;
 
             // printf("\n-------- END GET_BOOKS ----------\n");
@@ -426,7 +419,6 @@ int main(int argc, char *argv[])
             scanf("%d", &id);
 
             get_book();
-
             continue;
 
             // printf("\n-------- END GET_BOOK ----------\n");
@@ -454,14 +446,39 @@ int main(int argc, char *argv[])
 
             printf("page_count=");
 
-            if (scanf("%d", &page_count) >= 0)
+            if (scanf("%d", &page_count) < 0)
             {
-                sprintf(page_count_string, "%d", page_count);
-                add_book();
-            }
-            else
                 printf("\n!!! Invalid page count!\n\n");
+                continue;
+            }
 
+            sprintf(page_count_string, "%d", page_count);
+
+            if(strlen(title) == 0)
+            {
+                printf("\n!!! Invalid title!\n\n");
+                continue;
+            }
+
+            if(strlen(author) == 0)
+            {
+                printf("\n!!! Invalid author!\n\n");
+                continue;
+            }
+
+            if(strlen(genre) == 0)
+            {
+                printf("\n!!! Invalid genre!\n\n");
+                continue;
+            }
+
+            if(strlen(publisher) == 0)
+            {
+                printf("\n!!! Invalid publisher!\n\n");
+                continue;
+            }
+
+            add_book();
             continue;
 
             // printf("\n-------- END ADD_BOOK ----------\n");
@@ -475,7 +492,6 @@ int main(int argc, char *argv[])
             scanf("%d", &id);
 
             delete_book();
-
             continue;
 
             // printf("\n-------- END DELETE_BOOK ----------\n");
@@ -486,7 +502,6 @@ int main(int argc, char *argv[])
             // printf("\n-------- LOGOUT --------\n");
 
             logout();
-
             continue;
 
             // printf("\n-------- END LOGOUT ----------\n");
